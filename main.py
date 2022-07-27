@@ -15,35 +15,102 @@
 #[9] SubField
 #[10] Domain
 
+#Standard save info
+#[0] Type
+#[1] Num
+#[2] Grade
+#[3] Resit
+#[4] Resit Grade
+
 master_list = open("master-list.csv", "r")
 student_standards = open("student_standards.txt", "a")
+entered_standards = []
+temp_line_storage = []
+
+def rqadd():
+    #Standard type entry
+    std_type = input("What type of standard is it? ").lower()
+
+    if std_type in ["as", "us"]:
+        std_type = std_type.upper()
+    else:
+        print("Entry failed!")
+        return False
+
+    #Standard number entry
+    std_num = input("What is the standard number? ")
+
+    if std_num in entered_standards:
+        print("This standard is already entered!")
+        return False
+
+    #Initial grade entry
+    std_grade = input("What grade did you recieve (short format): ").lower()
+
+    if std_grade in ["na", "a", "m", "e"]:
+        std_grade = std_grade.upper()
+    else:
+        print("Entry failed!")
+        return False
+
+    #Resit Y/N
+    std_resit = input("Did you resit (Y/N): ").lower()
+
+    if std_resit in ["yes", "y"]:
+        std_resit = "TRUE"
+    elif std_resit in ["no", "n"]:
+        std_resit = "FALSE"
+    else:
+        print("Entry failed!")
+        return False
+
+    #Resit grade entry
+    if std_resit == "TRUE":
+        std_regrade = input("What was your resit grade? ").lower()
+
+        if std_regrade in ["na", "a", "m", "e"]:
+            std_regrade = std_regrade.upper()
+        else:
+            print("Entry failed!")
+            return False
+    else:
+        std_regrade = "NORESIT"
+    
+    #Save standard information
+    student_standards.write(','.join([std_type, std_num, std_grade, std_resit, std_regrade]) + "\n")
+
+    #Add standard number to list
+    entered_standards.append(std_num)
+    print(entered_standards)
+
+    #Return complete
+    return True
+
+def rqrem(std_num):
+    with open("student_standards.txt", "r") as f:
+        temp_line_storage = f.readlines()
+    with open("student_standards.txt", "w") as f:
+        for line in temp_line_storage:
+            if std_num not in line:
+                f.write(line)
+
+#-----------------------------------------------------------------------------------------------------------------
+#Start of main sector
 
 print("Welcome to NTrack System")
+
+#Main loop
 cmd = input("Enter a command: ")
-
-if cmd.lower() == "add":
-    print("Complete following information to add a standard to your directory:")
-    std_num = input("Standard number: ")
-    std_grade = input("Marked grade: ").lower()
-
-    if std_grade == "not achieved" or "na":
-        std_grade = "NA"
-    elif std_grade == "achieved" or "a":
-        std_grade = "A"
-    elif std_grade == "merit" or "m":
-        std_grade = "M"
-    elif std_grade == "excellence" or "e":
-        std_grade = "E"
-    else:
-        True
+while cmd != "exit":
+    if cmd.lower() == "add":
+        is_complete = rqadd()
+        print(f"Completion status: {is_complete}")
     
+    if cmd.lower() == "remove":
+        std_num = input("Enter standard number you would like to remove: ")
+        rqrem(std_num)
+    
+    cmd = input("Enter a command: ")
 
-
-    std_resit = input("Resit (True/False): ").lower()
-    if std_resit == "true":
-        std_regrade = input("Resit grade: ")
-        student_standards.write(','.join([std_num, std_grade, std_resit, std_regrade]) + "\n")
-    elif std_resit == "false":
-        student_standards.write(','.join([std_num, std_grade, std_resit, "NORESIT"]) + "\n")
-
+master_list.close()
 student_standards.close()
