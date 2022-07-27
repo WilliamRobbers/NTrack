@@ -98,6 +98,7 @@ def rqrem(std_num):
 #Start of main sector
 
 print("Welcome to NTrack System")
+print("© William Robbers 2022")
 
 #Main loop
 cmd = input("Enter a command: ")
