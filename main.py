@@ -1,6 +1,6 @@
 #Author: William Robbers
-#Date: 7/07/2022
-#Version: 0.0
+#Date: 28/07/2022
+#Version: 0.1
 
 #Standard Indecies
 #[0] Title
@@ -23,11 +23,10 @@
 #[4] Resit Grade
 
 master_list = open("master-list.csv", "r")
-student_standards = open("student_standards.txt", "a")
-entered_standards = []
-temp_line_storage = []
+entered_standards = [] #Saves std_num of saved standards
+temp_line_storage = [] #Used for removing lines from student standards
 
-def rqadd():
+def add_standard():
     #Standard type entry
     std_type = input("What type of standard is it? ").lower()
 
@@ -77,22 +76,28 @@ def rqadd():
         std_regrade = "NORESIT"
     
     #Save standard information
+    student_standards = open("student_standards.txt", "a")
     student_standards.write(','.join([std_type, std_num, std_grade, std_resit, std_regrade]) + "\n")
+    student_standards.close()
 
     #Add standard number to list
     entered_standards.append(std_num)
-    print(entered_standards)
 
     #Return complete
     return True
 
-def rqrem(std_num):
+def remove_standard(std_num):
     with open("student_standards.txt", "r") as f:
         temp_line_storage = f.readlines()
     with open("student_standards.txt", "w") as f:
         for line in temp_line_storage:
             if std_num not in line:
                 f.write(line)
+            else:
+                print("Removed!")
+
+def show_standards():
+    True
 
 #-----------------------------------------------------------------------------------------------------------------
 #Start of main sector
@@ -100,18 +105,25 @@ def rqrem(std_num):
 print("Welcome to NTrack System")
 print("© William Robbers 2022")
 
+#Load standards into list
+with open("student_standards.txt", "r") as f:
+    for standard in f:
+        entered_standards.append(standard.split(',')[1])
+
 #Main loop
 cmd = input("Enter a command: ")
 while cmd != "exit":
     if cmd.lower() == "add":
-        is_complete = rqadd()
+        is_complete = add_standard()
         print(f"Completion status: {is_complete}")
     
     if cmd.lower() == "remove":
         std_num = input("Enter standard number you would like to remove: ")
-        rqrem(std_num)
+        remove_standard(std_num)
+    
+    if cmd.lower() == "my_standards":
+        True
     
     cmd = input("Enter a command: ")
 
 master_list.close()
-student_standards.close()
