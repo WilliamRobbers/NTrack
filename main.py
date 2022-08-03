@@ -1,6 +1,6 @@
 import csv
 #Author: William Robbers
-#Date: 28/07/2022
+#Date: 4/08/2022
 #Version: 0.2
 
 #add links for the nzqa marking schedule and/or exemplars
@@ -26,8 +26,13 @@ import csv
 #[4] Resit Grade
 #[5] STD Credits
 
+credits_required_by_level = {1:80, 2:60, 3:60}
 entered_standards = [] #Saves std_num of saved standards
 temp_line_storage = [] #Used for removing lines from student standards
+level = 0
+
+def startup():
+    level = int(input("What NCEA level are you? "))
 
 def get_credits(std):
     with open("master-list.csv", "r") as f:
@@ -42,7 +47,6 @@ def check_std(std):
             if std in line[1]:
                 f.close()
                 return True
-
 
 def add_standard():
     #Takes all standard (std) information to add to student's standard database
@@ -109,7 +113,11 @@ def remove_standard(std_num):
                 print("Removed!")
 
 def show_standards():
-    True
+    with open("student_standards.txt", "r") as f:
+        print("\n")
+        for standard in f:
+            print(standard.strip("\n"))
+        print("\n")
 
 #-----------------------------------------------------------------------------------------------------------------
 #Start of main sector
@@ -126,14 +134,13 @@ with open("student_standards.txt", "r") as f:
 cmd = input("Enter a command: ")
 while cmd != "exit":
     if cmd.lower() == "add":
-        is_complete = add_standard()
-        print(f"Completion status: {is_complete}")
+        add_standard()
     
     if cmd.lower() == "remove":
         std_num = input("Enter standard number you would like to remove: ")
         remove_standard(std_num)
     
     if cmd.lower() == "show":
-        True
+        show_standards()
     
     cmd = input("Enter a command: ")
