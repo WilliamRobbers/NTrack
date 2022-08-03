@@ -1,6 +1,9 @@
+import csv
 #Author: William Robbers
 #Date: 28/07/2022
-#Version: 0.1
+#Version: 0.2
+
+#add links for the nzqa marking schedule and/or exemplars
 
 #Standard Indecies
 #[0] Title
@@ -9,7 +12,7 @@
 #[3] Version
 #[4] Level
 #[5] Credits
-#[6] Std Status
+#[6] STD Status
 #[7] Ver Status
 #[8] Field
 #[9] SubField
@@ -21,31 +24,42 @@
 #[2] Grade
 #[3] Resit
 #[4] Resit Grade
+#[5] STD Credits
 
-master_list = open("master-list.csv", "r")
 entered_standards = [] #Saves std_num of saved standards
 temp_line_storage = [] #Used for removing lines from student standards
 
+def get_credits(std):
+    with open("master-list.csv", "r") as f:
+        for line in csv.reader(f):
+            if line[1] == std:
+                f.close()
+                return line[5]
+
+def check_std(std):
+    with open("master-list.csv", "r") as f:
+        for line in csv.reader(f):
+            if std in line[1]:
+                f.close()
+                return True
+
+
 def add_standard():
-    #Standard type entry
-    std_type = input("What type of standard is it? ").lower()
-
-    if std_type in ["as", "us"]:
-        std_type = std_type.upper()
-    else:
-        print("Entry failed!")
-        return False
-
-    #Standard number entry
+    #Takes all standard (std) information to add to student's standard database
     std_num = input("What is the standard number? ")
-
-    if std_num in entered_standards:
-        print("This standard is already entered!")
+    if check_std(std_num) == True:
+        if std_num in entered_standards:
+            print("This standard is already entered!")
+            return False
+    else:
+        print("This standard does not exist or is not current / registered")
         return False
-
+    
+    #Fetch credits of standard
+    std_credits = get_credits(std_num)
+    
     #Initial grade entry
     std_grade = input("What grade did you recieve (short format): ").lower()
-
     if std_grade in ["na", "a", "m", "e"]:
         std_grade = std_grade.upper()
     else:
@@ -54,7 +68,6 @@ def add_standard():
 
     #Resit Y/N
     std_resit = input("Did you resit (Y/N): ").lower()
-
     if std_resit in ["yes", "y"]:
         std_resit = "TRUE"
     elif std_resit in ["no", "n"]:
@@ -66,7 +79,6 @@ def add_standard():
     #Resit grade entry
     if std_resit == "TRUE":
         std_regrade = input("What was your resit grade? ").lower()
-
         if std_regrade in ["na", "a", "m", "e"]:
             std_regrade = std_regrade.upper()
         else:
@@ -77,7 +89,7 @@ def add_standard():
     
     #Save standard information
     student_standards = open("student_standards.txt", "a")
-    student_standards.write(','.join([std_type, std_num, std_grade, std_resit, std_regrade]) + "\n")
+    student_standards.write(','.join([std_num, std_grade, std_resit, std_regrade, std_credits]) + "\n")
     student_standards.close()
 
     #Add standard number to list
@@ -105,7 +117,7 @@ def show_standards():
 print("Welcome to NTrack System")
 print("© William Robbers 2022")
 
-#Load standards into list
+#Load standards into current standards list
 with open("student_standards.txt", "r") as f:
     for standard in f:
         entered_standards.append(standard.split(',')[1])
@@ -121,9 +133,7 @@ while cmd != "exit":
         std_num = input("Enter standard number you would like to remove: ")
         remove_standard(std_num)
     
-    if cmd.lower() == "my_standards":
+    if cmd.lower() == "show":
         True
     
     cmd = input("Enter a command: ")
-
-master_list.close()
