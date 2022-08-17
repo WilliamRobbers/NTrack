@@ -1,7 +1,7 @@
 import csv
 #Author: William Robbers
-#Date: 4/08/2022
-#Version: 0.3
+#Date: 18/08/2022
+#Version: 0.4
 
 #add links for the nzqa marking schedule and/or exemplars
 
@@ -29,18 +29,12 @@ import csv
 credits_required_by_level = {1:80, 2:60, 3:60}
 entered_standards = [] #Saves std_num of saved standards
 temp_line_storage = [] #Used for removing lines from student standards
-level = 0
-
-def startup():
-    global level
-    level = int(input("What NCEA level are you? "))
-    if level not in [1, 2, 3]:
-        print("Level not valid")
-        level = 0
-        return False
-    else:
-        level = level
-        return True
+account = {
+    'level' : 0, 
+    'a_credits' : 0, 
+    'm_credits' : 0,
+    'e_credits' : 0
+}
 
 def get_std_info(std):
     with open("master-list.csv", "r") as f:
@@ -52,7 +46,6 @@ def get_std_info(std):
 
 def add_standard(std_num):
     #Takes all standard (std) information to add to student's standard database
-    #std_num = input("What is the standard number? ")
 
     if get_std_info(std_num) != False:
         if std_num in entered_standards:
@@ -62,6 +55,7 @@ def add_standard(std_num):
             std_credits = get_std_info(std_num)[5]
     else:
         print("This standard does not exist or is not current / registered")
+        return False
     
     #Initial grade entry
     std_grade = input("What grade did you recieve (short format): ").lower()
@@ -115,7 +109,7 @@ def remove_standard(std_num):
     try:
         entered_standards.remove(std_num)
     except ValueError:
-        print("You are not attempting this standard!")
+        print("You are not enrolled in this standard!")
         return False
 
 def show_standards():
@@ -131,6 +125,26 @@ def update_standard():
     if not remove_standard(updated_std_num) == False:
         add_standard(updated_std_num)
 
+def refresh_credit_totals():
+    with open("student_standards.txt", "r")  as f:
+        account["a_credits"] = 0
+        account["m_credits"] = 0
+        account["e_credits"] = 0
+        for standard in f:
+            if standard.split(",")[2] == "TRUE":
+                if standard.split(",")[3] == "A":
+                    account["a_credits"] += int(standard.split(",")[4])
+                elif standard.split(",")[3] == "M":
+                    account["m_credits"] += int(standard.split(",")[4])
+                elif standard.split(",")[3] == "E":
+                    account["e_credits"] += int(standard.split(",")[4])
+            else:
+                if standard.split(",")[1] == "A":
+                    account["a_credits"] += int(standard.split(",")[4])
+                elif standard.split(",")[1] == "M":
+                    account["m_credits"] += int(standard.split(",")[4])
+                elif standard.split(",")[1] == "E":
+                    account["e_credits"] += int(standard.split(",")[4])
 
 
 #-----------------------------------------------------------------------------------------------------------------
@@ -139,34 +153,36 @@ def update_standard():
 print("Welcome to NTrack System")
 print("© William Robbers 2022")
 
-valid_level = startup()
-
 #Load standards into current standards list
 with open("student_standards.txt", "r") as f:
     for standard in f:
         entered_standards.append(standard.split(',')[0])
 
 #Main loop
-if valid_level:
+cmd = input("Enter a command: ")
+while cmd != "exit":
+    if cmd.lower() == "add":
+        std_num = input("Enter standard number: ")
+        add_standard(std_num)
+    
+    if cmd.lower() == "remove":
+        std_num = input("Enter standard number you would like to remove: ")
+        remove_standard(std_num)
+    
+    if cmd.lower() == "show":
+        show_standards()
+
+    if cmd.lower() == "update":
+        update_standard()
+    
+    if cmd.lower() == "profile":
+        level = int(input("Enter NCEA level: "))
+        if level in [1, 2, 3]:
+            refresh_credit_totals()
+            print(f"Achieved: {account['a_credits']}")
+            print(f"Merit: {account['m_credits']}")
+            print(f"Excellence: {account['e_credits']}")
+            total_credits = account['a_credits'] + account['m_credits'] + account['e_credits']
+            print(f"Overall progress: {total_credits}/{credits_required_by_level[level]} -- {(total_credits/credits_required_by_level[level])*100}%")
+
     cmd = input("Enter a command: ")
-    while cmd != "exit":
-        if cmd.lower() == "add":
-            std_num = input("Enter standard number: ")
-            add_standard(std_num)
-        
-        if cmd.lower() == "remove":
-            std_num = input("Enter standard number you would like to remove: ")
-            remove_standard(std_num)
-        
-        if cmd.lower() == "show":
-            show_standards()
-
-        if cmd.lower() == "update":
-            update_standard()
-        
-        if cmd.lower() == "profile":
-            name = input("Enter name: ")
-
-        
-        
-        cmd = input("Enter a command: ")
