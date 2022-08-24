@@ -156,7 +156,11 @@ def display_overall_progress():
         print(f"Overall progress: {total_credits}/{credits_required_by_level[level]} -- {(total_credits/credits_required_by_level[level])*100}%")
 
 def display_endorsement_progress():
-    pass
+    print("\n")
+    refresh_credit_totals()
+    print(f"Merit endorsement: {account['m_credits'] + account['e_credits']}/50")
+    print(f"Excellence endorsement: {account['e_credits']}/50")
+    print("\n")
 
 #-----------------------------------------------------------------------------------------------------------------
 #Start of main sector
