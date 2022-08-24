@@ -46,7 +46,6 @@ def get_std_info(std):
 
 def add_standard(std_num):
     #Takes all standard (std) information to add to student's standard database
-
     if get_std_info(std_num) != False:
         if std_num in entered_standards:
             print("This standard is already entered!")
@@ -146,6 +145,18 @@ def refresh_credit_totals():
                 elif standard.split(",")[1] == "E":
                     account["e_credits"] += int(standard.split(",")[4])
 
+def display_overall_progress():
+    level = int(input("Enter NCEA level: "))
+    if level in [1, 2, 3]:
+        refresh_credit_totals()
+        print(f"Achieved: {account['a_credits']}")
+        print(f"Merit: {account['m_credits']}")
+        print(f"Excellence: {account['e_credits']}")
+        total_credits = account['a_credits'] + account['m_credits'] + account['e_credits']
+        print(f"Overall progress: {total_credits}/{credits_required_by_level[level]} -- {(total_credits/credits_required_by_level[level])*100}%")
+
+def display_endorsement_progress():
+    pass
 
 #-----------------------------------------------------------------------------------------------------------------
 #Start of main sector
@@ -175,14 +186,11 @@ while cmd != "exit":
     if cmd.lower() == "update":
         update_standard()
     
-    if cmd.lower() == "profile":
-        level = int(input("Enter NCEA level: "))
-        if level in [1, 2, 3]:
-            refresh_credit_totals()
-            print(f"Achieved: {account['a_credits']}")
-            print(f"Merit: {account['m_credits']}")
-            print(f"Excellence: {account['e_credits']}")
-            total_credits = account['a_credits'] + account['m_credits'] + account['e_credits']
-            print(f"Overall progress: {total_credits}/{credits_required_by_level[level]} -- {(total_credits/credits_required_by_level[level])*100}%")
+    if cmd.lower() == "overall":
+        display_overall_progress()
+    
+    if cmd.lower() == "endorsements":
+        display_endorsement_progress()
+        
 
     cmd = input("Enter a command: ")
