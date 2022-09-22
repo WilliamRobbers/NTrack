@@ -16,10 +16,11 @@ def window():
             resit_grade_entry.model().item(2).setEnabled(True)
             resit_grade_entry.model().item(3).setEnabled(True)
         
-        #If original grade is excellence, disable resit checkbox and set resit grade to NA
+        #If original grade is excellence, disable resit checkbox and set resit grade to NA and disable
         if original_grade_entry.currentIndex() == 3:
             standard_resit_checkbox.setChecked(False)
             standard_resit_checkbox.setEnabled(False)
+            resit_grade_entry.setEnabled(False)
             resit_grade_entry.setCurrentIndex(0)
         else:
             standard_resit_checkbox.setEnabled(True)
@@ -27,8 +28,31 @@ def window():
     def add_standard():
         entered_std_num = std_num_entry_box.text().strip(" AUS")
         entered_original_grade = original_grade_entry.currentText()
-        standard_resit = standard_resit_checkbox.isChecked()
+        standard_resit = str(standard_resit_checkbox.isChecked()).upper()
         entered_resit_grade = resit_grade_entry.currentText()
+
+        if entered_original_grade == "Not Achieved":
+            entered_original_grade = "NA"
+        elif entered_original_grade == "Achieved":
+            entered_original_grade = "A"
+        elif entered_original_grade == "Merit":
+            entered_original_grade = "M"
+        elif entered_original_grade == "Excellence":
+            entered_original_grade = "E"
+
+        if standard_resit == "FALSE":
+            entered_resit_grade = "NORESIT"
+        
+        if entered_resit_grade == "Not Achieved":
+            entered_resit_grade = "NA"
+        elif entered_resit_grade == "Achieved":
+            entered_resit_grade = "A"
+        elif entered_resit_grade == "Merit":
+            entered_resit_grade = "M"
+        elif entered_resit_grade == "Excellence":
+            entered_resit_grade = "E"
+        
+        print(" ".join([entered_std_num, entered_original_grade, standard_resit, entered_resit_grade]))
         
     #Create system application window
     app = QApplication(sys.argv)
@@ -82,6 +106,7 @@ def window():
     standard_resit_checkbox.setText("Resit")
     standard_resit_checkbox.setFont(arial18)
     add_std_layout.addWidget(standard_resit_checkbox, 1, 0)
+    standard_resit_checkbox.stateChanged.connect(na_selected)
 
     #Resit grade combo box
     resit_grade_entry = QComboBox(tab_widget)
