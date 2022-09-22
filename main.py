@@ -47,11 +47,11 @@ def get_std_info(std):
 def add_standard(std_num):
     #Takes all standard (std) information to add to student's standard database
     if get_std_info(std_num) != False:
-        if std_num in entered_standards:
+        if std_num not in entered_standards:
+            std_credits = get_std_info(std_num)[5]
+        else:
             print("This standard is already entered!")
             return False
-        else:
-            std_credits = get_std_info(std_num)[5]
     else:
         print("This standard does not exist or is not current / registered")
         return False
