@@ -1,200 +1,168 @@
+import sys
 import csv
-#Author: William Robbers
-#Date: 18/08/2022
-#Version: 0.4
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 
-#add links for the nzqa marking schedule and/or exemplars
-
-#Standard Indecies
-#[0] Title
-#[1] Number
-#[2] Type
-#[3] Version
-#[4] Level
-#[5] Credits
-#[6] STD Status
-#[7] Ver Status
-#[8] Field
-#[9] SubField
-#[10] Domain
-
-#Standard save info
-#[0] Type
-#[1] Num
-#[2] Grade
-#[3] Resit
-#[4] Resit Grade
-#[5] STD Credits
-
-credits_required_by_level = {1:80, 2:60, 3:60}
 entered_standards = [] #Saves std_num of saved standards
-temp_line_storage = [] #Used for removing lines from student standards
-account = {
-    'level' : 0, 
-    'a_credits' : 0, 
-    'm_credits' : 0,
-    'e_credits' : 0
-}
 
-def get_std_info(std):
-    with open("master-list.csv", "r") as f:
-        for line in csv.reader(f):
-            if line[1] == std:
-                return line
-        #If standard is not found
-        return False
-
-def add_standard(std_num):
-    #Takes all standard (std) information to add to student's standard database
-    if get_std_info(std_num) != False:
-        if std_num not in entered_standards:
-            std_credits = get_std_info(std_num)[5]
-        else:
-            print("This standard is already entered!")
-            return False
-    else:
-        print("This standard does not exist or is not current / registered")
-        return False
-    
-    #Initial grade entry
-    std_grade = input("What grade did you recieve (short format): ").lower()
-    if std_grade in ["na", "a", "m", "e"]:
-        std_grade = std_grade.upper()
-    else:
-        print("Entry failed!")
-        return False
-
-    #Resit Y/N
-    std_resit = "FALSE" #default setting
-    if std_grade != "E":
-        std_resit = input("Did you resit (Y/N): ").lower()
-        if std_resit in ["yes", "y"]:
-            std_resit = "TRUE"
-        elif std_resit in ["no", "n"]:
-            std_resit = "FALSE"
-        else:
-            print("Entry failed!")
+def window():
+    def get_std_info(std):
+        with open("master-list.csv", "r") as f:
+            for line in csv.reader(f):
+                if line[1] == std:
+                    return line
+            #If standard is not found
             return False
 
-    #Resit grade entry
-    if std_resit == "TRUE":
-        std_regrade = input("What was your resit grade? ").lower()
-        if std_regrade in ["na", "a", "m", "e"]:
-            std_regrade = std_regrade.upper()
+    def error_box(msg):
+        err_box = QMessageBox()
+        err_box.setText(msg)
+        err_box.setWindowTitle("ERROR")
+        err_box.setStandardButtons(QMessageBox.Ok)
+        err_box.exec_()
+
+    def na_selected():
+        #Set resit grade to NA everytime original grade is changed
+        resit_grade_entry.setCurrentIndex(0)
+
+        #If original grade is not achieved, disable resit for merit or excellence
+        if original_grade_entry.currentIndex() == 0:
+            resit_grade_entry.model().item(2).setEnabled(False)
+            resit_grade_entry.model().item(3).setEnabled(False)
         else:
-            print("Entry failed!")
-            return False
-    else:
-        std_regrade = "NORESIT"
-    
-    #Save standard information
-    student_standards = open("student_standards.txt", "a")
-    student_standards.write(','.join([std_num, std_grade, std_resit, std_regrade, std_credits]) + "\n")
-    student_standards.close()
-
-    #Add standard number to list
-    entered_standards.append(std_num)
-
-    #Return complete
-    return True
-
-def remove_standard(std_num):
-    with open("student_standards.txt", "r") as f:
-        temp_line_storage = f.readlines()
-    with open("student_standards.txt", "w") as f:
-        for line in temp_line_storage:
-            if std_num not in line:
-                f.write(line)
-    try:
-        entered_standards.remove(std_num)
-    except ValueError:
-        print("You are not enrolled in this standard!")
-        return False
-
-def show_standards():
-    with open("student_standards.txt", "r") as f:
-        print("\n")
-        for standard in f:
-            std = standard.strip("\n").split(",")
-            print(f"STD Number: {std[0]}, STD Original grade: {std[1]}, STD Resit: {std[2]}, STD Resit grade: {std[3]}, Credits: {std[4]}")
-        print("\n")
-
-def update_standard():
-    updated_std_num = input("Which standard would you like to update? ")
-    if not remove_standard(updated_std_num) == False:
-        add_standard(updated_std_num)
-
-def refresh_credit_totals():
-    with open("student_standards.txt", "r")  as f:
-        account["a_credits"] = 0
-        account["m_credits"] = 0
-        account["e_credits"] = 0
-        for standard in f:
-            if standard.split(",")[2] == "TRUE":
-                if standard.split(",")[3] == "A":
-                    account["a_credits"] += int(standard.split(",")[4])
-                elif standard.split(",")[3] == "M":
-                    account["m_credits"] += int(standard.split(",")[4])
-                elif standard.split(",")[3] == "E":
-                    account["e_credits"] += int(standard.split(",")[4])
-            else:
-                if standard.split(",")[1] == "A":
-                    account["a_credits"] += int(standard.split(",")[4])
-                elif standard.split(",")[1] == "M":
-                    account["m_credits"] += int(standard.split(",")[4])
-                elif standard.split(",")[1] == "E":
-                    account["e_credits"] += int(standard.split(",")[4])
-
-def display_overall_progress():
-    level = int(input("Enter NCEA level: "))
-    if level in [1, 2, 3]:
-        refresh_credit_totals()
-        print(f"Achieved: {account['a_credits']}")
-        print(f"Merit: {account['m_credits']}")
-        print(f"Excellence: {account['e_credits']}")
-        total_credits = account['a_credits'] + account['m_credits'] + account['e_credits']
-        print(f"Overall progress: {total_credits}/{credits_required_by_level[level]} -- {(total_credits/credits_required_by_level[level])*100}%")
-
-def display_endorsement_progress():
-    print("\n")
-    refresh_credit_totals()
-    print(f"Merit endorsement: {account['m_credits'] + account['e_credits']}/50")
-    print(f"Excellence endorsement: {account['e_credits']}/50")
-    print("\n")
-
-#-----------------------------------------------------------------------------------------------------------------
-#Start of main sector
-
-print("Welcome to NTrack System")
-print("© William Robbers 2022")
-
-#Load standards into current standards list
-with open("student_standards.txt", "r") as f:
-    for standard in f:
-        entered_standards.append(standard.split(',')[0])
-
-#Main loop
-cmd = input("Enter a command: ")
-while cmd != "exit":
-    if cmd.lower() == "add":
-        std_num = input("Enter standard number: ")
-        add_standard(std_num)
-    
-    if cmd.lower() == "remove":
-        std_num = input("Enter standard number you would like to remove: ")
-        remove_standard(std_num)
-    
-    if cmd.lower() == "show":
-        show_standards()
-
-    if cmd.lower() == "update":
-        update_standard()
-    
-    if cmd.lower() == "overall":
-        display_overall_progress()
-    
-    if cmd.lower() == "endorsements":
-        display_endorsement_progress()
+            resit_grade_entry.model().item(2).setEnabled(True)
+            resit_grade_entry.model().item(3).setEnabled(True)
         
+        #If original grade is excellence, disable resit checkbox and set resit grade to NA and disable
+        if original_grade_entry.currentIndex() == 3:
+            standard_resit_checkbox.setChecked(False)
+            standard_resit_checkbox.setEnabled(False)
+            resit_grade_entry.setEnabled(False)
+            resit_grade_entry.setCurrentIndex(0)
+        else:
+            standard_resit_checkbox.setEnabled(True)
+    
+    def add_standard():
+        entered_std_num = std_num_entry_box.text().strip(" AUS")
+        entered_original_grade = original_grade_entry.currentText()
+        standard_resit = str(standard_resit_checkbox.isChecked()).upper()
+        entered_resit_grade = resit_grade_entry.currentText()
 
-    cmd = input("Enter a command: ")
+        if entered_std_num == "":
+            error_box("Error: Please enter valid standard number!")
+            return
+
+        if entered_original_grade == "Not Achieved":
+            entered_original_grade = "NA"
+        elif entered_original_grade == "Achieved":
+            entered_original_grade = "A"
+        elif entered_original_grade == "Merit":
+            entered_original_grade = "M"
+        elif entered_original_grade == "Excellence":
+            entered_original_grade = "E"
+
+        if standard_resit == "FALSE":
+            entered_resit_grade = "NORESIT"
+        
+        if entered_resit_grade == "Not Achieved":
+            entered_resit_grade = "NA"
+        elif entered_resit_grade == "Achieved":
+            entered_resit_grade = "A"
+        elif entered_resit_grade == "Merit":
+            entered_resit_grade = "M"
+        elif entered_resit_grade == "Excellence":
+            entered_resit_grade = "E"
+        
+        #If standard exists
+        if get_std_info(entered_std_num) != False:
+            standard_credits = get_std_info(entered_std_num)[5]
+            student_standards = open("student_standards.txt", "a")
+            student_standards.write(','.join([entered_std_num, entered_original_grade, standard_resit, entered_resit_grade, standard_credits]) + "\n")
+            student_standards.close()
+        else:
+            error_box("Error: Standard does not exist or is not registered!")
+                
+    #Create system application window
+    app = QApplication(sys.argv)
+
+    #Layouts
+    central_layout = QGridLayout()
+    add_std_layout = QGridLayout()
+
+    #Size Policies
+    HStretch_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+    VStretch_policy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
+    FStretch_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+    #Fonts
+    arial18 = QFont("Arial", 18)
+    arial24 = QFont("Arial", 24)
+
+    #Central widget
+    central_widget = QWidget()
+    central_widget.setMinimumSize(1200,400)
+    central_widget.setGeometry(0,0, 1200,400)
+    central_widget.setLayout(central_layout)
+    
+    #Add standard page
+    add_std_page = QWidget()
+    add_std_page.setLayout(add_std_layout)
+
+    #Tab setup
+    tab_widget = QTabWidget(central_widget)
+    tab_widget.addTab(add_std_page, "Add standard")
+    central_layout.addWidget(tab_widget)
+
+    #Standard number entry
+    std_num_entry_box = QLineEdit(tab_widget)
+    std_num_entry_box.setPlaceholderText("Enter standard number (e.g 91004)")
+    std_num_entry_box.setFont(arial18)
+    add_std_layout.addWidget(std_num_entry_box, 0, 0)
+
+    #Original grade combo box
+    original_grade_entry = QComboBox(tab_widget)
+    original_grade_entry.addItem("Not Achieved")
+    original_grade_entry.addItem("Achieved")
+    original_grade_entry.addItem("Merit")
+    original_grade_entry.addItem("Excellence")
+    original_grade_entry.setFont(arial18)
+    add_std_layout.addWidget(original_grade_entry, 0, 1)
+    original_grade_entry.currentIndexChanged.connect(na_selected)
+
+    #Resit checkbox
+    standard_resit_checkbox = QCheckBox(tab_widget)
+    standard_resit_checkbox.setText("Resit")
+    standard_resit_checkbox.setFont(arial18)
+    add_std_layout.addWidget(standard_resit_checkbox, 1, 0)
+    standard_resit_checkbox.stateChanged.connect(na_selected)
+
+    #Resit grade combo box
+    resit_grade_entry = QComboBox()
+    resit_grade_entry.setEnabled(False)
+    resit_grade_entry.addItem("Not Achieved")
+    resit_grade_entry.addItem("Achieved")
+    resit_grade_entry.addItem("Merit")
+    resit_grade_entry.addItem("Excellence")
+    resit_grade_entry.setFont(arial18)
+    add_std_layout.addWidget(resit_grade_entry, 1, 1)
+    standard_resit_checkbox.clicked.connect(resit_grade_entry.setEnabled)
+    resit_grade_entry.model().item(2).setEnabled(False)
+    resit_grade_entry.model().item(3).setEnabled(False)
+
+    #Add standard button
+    add_std_button = QPushButton(tab_widget)
+    add_std_button.setText("Add Standard")
+    add_std_button.setFont(arial24)
+    add_std_button.setSizePolicy(FStretch_policy)
+    add_std_layout.addWidget(add_std_button, 2, 0, 1, 2)
+
+    #testing
+    add_std_button.clicked.connect(add_standard)
+
+
+    central_widget.show()
+    sys.exit(app.exec_())
+
+if __name__ == '__main__':
+    window()
