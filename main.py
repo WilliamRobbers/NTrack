@@ -1,11 +1,10 @@
 import sys
 import csv
-from typing import Type
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
+from PyQt5.QtChart import *
 import PyQt5.QtWidgets
-from requests import delete
 
 credits_required_by_level = {1:80, 2:60, 3:60}
 entered_standards = [] #Saves std_num of saved standards
@@ -19,9 +18,23 @@ account = {
 def window():
     def display_total_credits():
         refresh_credit_totals()
+        level = account['level']
+        credits_required = credits_required_by_level[level]
         total_credits = account["a_credits"] + account["m_credits"] + account["e_credits"]
-        total_credits_label.setText(f"Total Credits: {str(total_credits)}/{credits_required_by_level[account['level']]}\n{total_credits/credits_required_by_level[account['level']]*100}%")
+        credits_left = 0
+        credits_left = 0 if credits_required - total_credits < 0 else credits_required - total_credits
+        percentage = round(total_credits / credits_required * 100, 2) if credits_left > 0 else 100
+        total_credits_label.setText(f"Total Credits: {str(total_credits)}/{credits_required}\n{percentage}%")
         ame_credits_label.setText(f"Achieved: {account['a_credits']}\nMerit: {account['m_credits']}\nExcellence: {account['e_credits']}")
+        
+        series1.clear()
+        series1.append("Credits Achieved", total_credits)
+        series1.append("Credits Left", credits_left)
+
+        series2.clear()
+        series2.append("Achieved", account['a_credits'])
+        series2.append("Merit", account['m_credits'])
+        series2.append("Excellence", account['e_credits'])
 
     def refresh_credit_totals():
         with open("student_standards.txt", "r")  as f:
@@ -215,6 +228,7 @@ def window():
     HStretch_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
     VStretch_policy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
     FStretch_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+    FFixed_Policy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
     #Fonts
     arial18 = QFont("Arial", 18)
@@ -314,12 +328,12 @@ def window():
     level_select = QComboBox()
     level_select.setFont(arial18)
     level_select.addItems(["1", "2", "3"])
-    results_layout.addWidget(level_select, 0, 0, 1, 2)
+    level_select.setSizePolicy(FFixed_Policy)
+    results_layout.addWidget(level_select, 0, 0, 1, 2, Qt.AlignCenter)
     level_select.currentIndexChanged.connect(lambda: set_level())
     def set_level():
         account["level"] = int(level_select.currentText())
         display_total_credits()
-
 
     #Total credits label
     total_credits_label = QLabel()
@@ -336,6 +350,49 @@ def window():
     results_layout.addWidget(ame_credits_label, 1, 1)
 
     tab_widget.currentChanged.connect(lambda: display_total_credits())
+
+    #Total credits pie chart
+    series1 = QPieSeries()
+    series1.append("Credits Achieved",0)
+    series1.append("Credits Left",0)
+    series1.setLabelsPosition(PyQt5.QtChart.QPieSlice.LabelInsideHorizontal)
+    series1.setLabelsVisible(True)
+
+    chart1 = QChart()
+    chart1.legend().hide()
+    chart1.addSeries(series1)
+    chart1.createDefaultAxes()
+    chart1.setAnimationOptions(QChart.SeriesAnimations)
+    chart1.setTitle("Total progress")
+
+    chart1.legend().setVisible(True)
+    chart1.legend().setAlignment(Qt.AlignBottom)
+
+    chartview1 = QChartView(chart1)
+
+    results_layout.addWidget(chartview1, 2, 0)
+
+    #AME Pie Chart
+    series2 = QPieSeries()
+    series2.append("Achieved",0)
+    series2.append("Merit",0)
+    series2.append("Excellence", 0)
+    series2.setLabelsPosition(PyQt5.QtChart.QPieSlice.LabelInsideHorizontal)
+    series2.setLabelsVisible(True)
+
+    chart2 = QChart()
+    chart2.legend().hide()
+    chart2.addSeries(series2)
+    chart2.createDefaultAxes()
+    chart2.setAnimationOptions(QChart.SeriesAnimations)
+    chart2.setTitle("Credit breakdown")
+
+    chart2.legend().setVisible(True)
+    chart2.legend().setAlignment(Qt.AlignBottom)
+
+    chartview2 = QChartView(chart2)
+
+    results_layout.addWidget(chartview2, 2, 1)
 
 
     #-------------------------------------------------------------------------------------
