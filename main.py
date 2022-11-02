@@ -15,9 +15,17 @@ account = {
     'e_credits' : 0
 }
 
+grade_pairs = {
+    'Not Achieved' : 'NA',
+    'Achieved' : 'A',
+    'Merit' : 'M',
+    'Excellence' : 'E'
+}
+
 def window():
     def display_total_credits():
         refresh_credit_totals()
+        #Total credits
         level = account['level']
         credits_required = credits_required_by_level[level]
         total_credits = account["a_credits"] + account["m_credits"] + account["e_credits"]
@@ -27,6 +35,10 @@ def window():
         total_credits_label.setText(f"Total Credits: {str(total_credits)}/{credits_required}\n{percentage}%")
         ame_credits_label.setText(f"Achieved: {account['a_credits']}\nMerit: {account['m_credits']}\nExcellence: {account['e_credits']}")
         
+        #Endorsement progress
+        endorsement_progress_label.setText(f"Merit endorsed: {account['m_credits'] + account['e_credits']}/50\nExcellence endorsed: {account['e_credits']}/50")
+
+        #Pie graph redraw
         series1.clear()
         series1.append("Credits Achieved", total_credits)
         series1.append("Credits Left", credits_left)
@@ -72,8 +84,12 @@ def window():
                 original_grade.setTextAlignment(Qt.AlignCenter)
                 resit = QTableWidgetItem(standard[2])
                 resit.setTextAlignment(Qt.AlignCenter)
-                resit_grade = QTableWidgetItem(standard[3])
-                resit_grade.setTextAlignment(Qt.AlignCenter)
+                resit_grade = QTableWidgetItem()
+                if standard[3] == "NORESIT":
+                    pass
+                else:
+                    resit_grade = QTableWidgetItem(standard[3])
+                    resit_grade.setTextAlignment(Qt.AlignCenter)
                 credits = QTableWidgetItem(standard[4])
                 credits.setTextAlignment(Qt.AlignCenter)
 
@@ -167,41 +183,18 @@ def window():
         show_standard_preview()
         resit_grade_entry.setCurrentIndex(0)
         
-        
-        #If original grade is excellence, disable resit checkbox and set resit grade to NA and disable
-        
-    
     def add_standard():
         entered_std_num = std_num_entry_box.text().strip(" AUS")
         entered_original_grade = original_grade_entry.currentText()
         standard_resit = str(standard_resit_checkbox.isChecked()).upper()
         entered_resit_grade = resit_grade_entry.currentText()
 
-        if entered_std_num == "":
-            error_box("Error: Please enter valid standard number!")
-            return
-
-        if entered_original_grade == "Not Achieved":
-            entered_original_grade = "NA"
-        elif entered_original_grade == "Achieved":
-            entered_original_grade = "A"
-        elif entered_original_grade == "Merit":
-            entered_original_grade = "M"
-        elif entered_original_grade == "Excellence":
-            entered_original_grade = "E"
-
-        if standard_resit == "FALSE":
+        entered_original_grade = grade_pairs[entered_original_grade]
+        if standard_resit == "TRUE":
+            entered_resit_grade = grade_pairs[entered_resit_grade]
+        else:
             entered_resit_grade = "NORESIT"
-        
-        if entered_resit_grade == "Not Achieved":
-            entered_resit_grade = "NA"
-        elif entered_resit_grade == "Achieved":
-            entered_resit_grade = "A"
-        elif entered_resit_grade == "Merit":
-            entered_resit_grade = "M"
-        elif entered_resit_grade == "Excellence":
-            entered_resit_grade = "E"
-        
+
         #If standard exists
         if get_std_info(entered_std_num) != False:
             if entered_std_num not in entered_standards:
@@ -214,7 +207,7 @@ def window():
                 error_box("Error: Standard already entered")
         else:
             error_box("Error: Standard does not exist or is not registered!")
-                
+
     #Create system application window
     app = QApplication(sys.argv)
 
@@ -324,12 +317,18 @@ def window():
     #When the add standard button is clicked, activate function to append to student_standards.txt
     add_std_button.clicked.connect(add_standard)
 
+    #Level label
+    level_label = QLabel("Level:")
+    level_label.setFont(arial18)
+    level_label.setSizePolicy(FFixed_Policy)
+    results_layout.addWidget(level_label, 0, 0, Qt.AlignRight)
+
     #Student NCEA Level
     level_select = QComboBox()
     level_select.setFont(arial18)
     level_select.addItems(["1", "2", "3"])
     level_select.setSizePolicy(FFixed_Policy)
-    results_layout.addWidget(level_select, 0, 0, 1, 2, Qt.AlignCenter)
+    results_layout.addWidget(level_select, 0, 1, Qt.AlignLeft)
     level_select.currentIndexChanged.connect(lambda: set_level())
     def set_level():
         account["level"] = int(level_select.currentText())
@@ -348,6 +347,13 @@ def window():
     ame_credits_label.setAlignment(Qt.AlignCenter)
     ame_credits_label.setSizePolicy(FStretch_policy)
     results_layout.addWidget(ame_credits_label, 1, 1)
+
+    #Endorsement progress
+    endorsement_progress_label = QLabel()
+    endorsement_progress_label.setFont(arial18)
+    endorsement_progress_label.setAlignment(Qt.AlignCenter)
+    endorsement_progress_label.setSizePolicy(FStretch_policy)
+    results_layout.addWidget(endorsement_progress_label, 2, 1)
 
     tab_widget.currentChanged.connect(lambda: display_total_credits())
 
@@ -370,7 +376,7 @@ def window():
 
     chartview1 = QChartView(chart1)
 
-    results_layout.addWidget(chartview1, 2, 0)
+    results_layout.addWidget(chartview1, 3, 0)
 
     #AME Pie Chart
     series2 = QPieSeries()
@@ -392,7 +398,7 @@ def window():
 
     chartview2 = QChartView(chart2)
 
-    results_layout.addWidget(chartview2, 2, 1)
+    results_layout.addWidget(chartview2, 3, 1)
 
 
     #-------------------------------------------------------------------------------------
