@@ -16,6 +16,7 @@ account = {
 }
 
 HR_to_short = {
+    'None': 'None',
     'FUTURE': 'FUTURE',
     'Not Achieved': 'NA',
     'Achieved': 'A',
@@ -24,6 +25,7 @@ HR_to_short = {
 }
 
 short_to_HR = {
+    'None': 'None',
     'FUTURE': 'FUTURE',
     'NA': 'Not Achieved',
     'A': 'Achieved',
@@ -32,8 +34,8 @@ short_to_HR = {
 }
 
 priority = {
+    'None': 0,
     'FUTURE': 0,
-    'NORESIT': 0,
     'NA': 0,
     'A': 1,
     'M': 2,
@@ -74,102 +76,93 @@ def window():
         series2.append("Excellence", account['e_credits'])
 
     def refresh_credit_totals():
-        with open("student_standards.txt", 'r') as f:
-            account["a_credits"] = 0
-            account["m_credits"] = 0
-            account["e_credits"] = 0
-            for standard in f:
-                original_grade = standard.split(",")[1]
-                resit_grade = standard.split(",")[3]
-                if priority[resit_grade] > priority[original_grade]:
-                    if priority[resit_grade] != 0:
-                        key = f"{resit_grade.lower()}_credits"
-                        account[key] = int(standard.split(",")[4])
-                else:
-                    if priority[original_grade] != 0:
-                        key = f"{original_grade.lower()}_credits"
-                        account[key] += int(standard.split(",")[4])
-    
-    def update_standard(entered_std_num, entered_original_grade, standard_resit, entered_resit_grade):
+        account["a_credits"] = 0  #
+        account["m_credits"] = 0  # Resit all credits to 0
+        account["e_credits"] = 0  #
+        for standard in std_list:  # Iterate through student's current enrolled standards
+            original_grade = standard[1]
+            resit_grade = standard[2]
+            if priority[resit_grade] > priority[original_grade]:  # If resit grade is better than original grade
+                if priority[resit_grade] != 0:  # If the resit grade is not None or NA
+                    key = f"{resit_grade.lower()}_credits"  # Key for account dictionary
+                    account[key] += int(standard[3])  # Add the correct grade credits to account
+            else:  # If the original grade is better than the resit grade
+                if priority[original_grade] != 0:  # If the original grade is not FUTURE or NA
+                    key = f"{original_grade.lower()}_credits"  # Key for account dictionary
+                    account[key] += int(standard[3])  # Add the correct grade credits to account
+
+    def update_standard(entered_std_num, entered_original_grade, entered_resit_grade):
         entered_original_grade = HR_to_short[entered_original_grade]  # Convert human-readable to shorthand for data structure
-        
-        for i, std in enumerate(std_list):
+
+        for i, std in enumerate(std_list):  # Change original grade
             if std[0] == entered_std_num:
-                std_list[i][1] = entered_original_grade
-        
+                std[1] = entered_original_grade
+
         commit_stds_to_file()
-        
-        
-        
-        # print(entered_original_grade)
-        # remove_standard(entered_std_num)
-        # add_standard(entered_std_num, entered_original_grade, standard_resit, entered_resit_grade)
-        # populate_view_standards_table()
-        
+        populate_view_standards_table()
+
     def populate_view_standards_table():
         current_standards_table.clearContents()
         current_standards_table.setRowCount(0)
         row = 0
-        with open("student_standards.txt", 'r') as student_standards:
-            for standard in student_standards:
-                standard = standard.strip('\n').split(",")
-                current_standards_table.setRowCount(current_standards_table.rowCount() + 1)
+        for standard in std_list:
+            current_standards_table.setRowCount(current_standards_table.rowCount() + 1)  # Add new row to list
 
-                standard_number = QTableWidgetItem(standard[0])
-                standard_number.setTextAlignment(Qt.AlignCenter)
-                standard_number.setFlags(standard_number.flags() & ~Qt.ItemIsEditable)
-                original_grade = QComboBox()
-                original_grade.addItem("FUTURE")
-                original_grade.addItem("Not Achieved")
-                original_grade.addItem("Achieved")
-                original_grade.addItem("Merit")
-                original_grade.addItem("Excellence")
-                original_grade.setCurrentText(short_to_HR[standard[1]])
-                original_grade.currentIndexChanged.connect(lambda: update_standard(current_standards_table.item(current_standards_table.currentRow(), 0).text(), current_standards_table.cellWidget(current_standards_table.currentRow(), 2).currentText(), standard[2], standard[3]))
-                resit = QComboBox()
-                resit.addItem("TRUE")
-                resit.addItem("FALSE")
-                resit.setCurrentText(standard[2])
-                resit_grade = QTableWidgetItem()
-                if standard[3] == "NORESIT":
-                    pass
-                else:
-                    resit_grade = QTableWidgetItem(standard[3])
-                    resit_grade.setTextAlignment(Qt.AlignCenter)
-                credits = QTableWidgetItem(standard[4])
-                credits.setTextAlignment(Qt.AlignCenter)
-                credits.setFlags(credits.flags() & ~Qt.ItemIsEditable)
+            standard_number = QTableWidgetItem(standard[0])
+            standard_number.setTextAlignment(Qt.AlignCenter)
+            standard_number.setFlags(standard_number.flags() & ~Qt.ItemIsEditable)
 
-                standard_name = QTableWidgetItem(get_std_info(standard[0])[0])
-                standard_name.setToolTip(get_std_info(standard[0])[0])
-                standard_name.setFlags(standard_name.flags() & ~Qt.ItemIsEditable)
+            original_grade = QComboBox()
+            original_grade.addItem("FUTURE")
+            original_grade.addItem("Not Achieved")
+            original_grade.addItem("Achieved")
+            original_grade.addItem("Merit")
+            original_grade.addItem("Excellence")
+            original_grade.setCurrentText(short_to_HR[standard[1]])
+            original_grade.currentIndexChanged.connect(lambda: update_standard(current_standards_table.item(current_standards_table.currentRow(), 0).text(), current_standards_table.cellWidget(current_standards_table.currentRow(), 2).currentText(), standard[2]))  # This is going to need to be fixed, standard[i] doesn't pass correct info
 
-                remove_standard_button = QPushButton("X")
-                remove_standard_button.clicked.connect(lambda: remove_standard(current_standards_table.item(current_standards_table.currentRow(), 0).text()))
+            resit_grade = QComboBox()
+            resit_grade.addItem("None")
+            resit_grade.addItem("Not Achieved")
+            resit_grade.addItem("Achieved")
+            resit_grade.addItem("Merit")
+            resit_grade.addItem("Excellence")
+            resit_grade.setCurrentText(short_to_HR[standard[2]])
+            #MUST ADD CONNECT HERE
 
-                current_standards_table.setItem(row, 0, standard_number)
-                current_standards_table.setItem(row, 1, standard_name)
-                current_standards_table.setCellWidget(row, 2, original_grade)
-                current_standards_table.setCellWidget(row, 3, resit)
-                current_standards_table.setItem(row, 4, resit_grade)
-                current_standards_table.setItem(row, 5, credits)
-                current_standards_table.setCellWidget(row, 6, remove_standard_button)
+            credits = QTableWidgetItem(standard[3])
+            credits.setTextAlignment(Qt.AlignCenter)
+            credits.setFlags(credits.flags() & ~Qt.ItemIsEditable)
 
-                current_standards_table.verticalHeader().hide()
-                row += 1
+            standard_name = QTableWidgetItem(get_std_info(standard[0])[0])
+            standard_name.setToolTip(get_std_info(standard[0])[0])
+            standard_name.setFlags(standard_name.flags() & ~Qt.ItemIsEditable)
+
+            remove_standard_button = QPushButton("X")
+            remove_standard_button.clicked.connect(lambda: remove_standard(current_standards_table.item(current_standards_table.currentRow(), 0).text()))
+
+            current_standards_table.setItem(row, 0, standard_number)
+            current_standards_table.setItem(row, 1, standard_name)
+            current_standards_table.setCellWidget(row, 2, original_grade)
+            current_standards_table.setCellWidget(row, 3, resit_grade)
+            current_standards_table.setItem(row, 4, credits)
+            current_standards_table.setCellWidget(row, 5, remove_standard_button)
+
+            current_standards_table.verticalHeader().hide()
+            row += 1
 
     def commit_stds_to_file():
         with open("student_standards.txt", 'w') as f:
             for standard in std_list:
                 standard = ",".join(standard) + "\n"
                 f.write(standard)
-    
+
     def remove_standard(std_num):
-        for i,std in enumerate(std_list):
+        for i, std in enumerate(std_list):
             if std[0] == std_num:
                 current_standards_table.removeRow(i)
                 del std_list[i]
-        
+
         commit_stds_to_file()
 
     def update_preview():
@@ -181,7 +174,6 @@ def window():
             standard_preview_box.setPlaceholderText("")
             standard_preview_box.setToolTip("Standard preview window")
         original_grade_entry.setCurrentIndex(0)
-        standard_resit_checkbox.setChecked(False)
         resit_grade_entry.setCurrentIndex(0)
 
     def get_std_info(std):
@@ -201,46 +193,42 @@ def window():
 
     def og_grade_changed():
         if original_grade_entry.currentIndex() == 0:  # Future
-            standard_resit_checkbox.setChecked(False)
-            standard_resit_checkbox.setEnabled(False)
             resit_grade_entry.setEnabled(False)
             resit_grade_entry.setCurrentIndex(0)
         elif original_grade_entry.currentIndex() == 1:  # NA
-            standard_resit_checkbox.setEnabled(True)
-            resit_grade_entry.model().item(2).setEnabled(False)
+            resit_grade_entry.setEnabled(True)
+            resit_grade_entry.setCurrentIndex(0)
             resit_grade_entry.model().item(3).setEnabled(False)
+            resit_grade_entry.model().item(4).setEnabled(False)
         elif original_grade_entry.currentIndex() == 2:  # A
-            standard_resit_checkbox.setEnabled(True)
-            resit_grade_entry.model().item(2).setEnabled(True)
+            resit_grade_entry.setEnabled(True)
+            resit_grade_entry.setCurrentIndex(0)
             resit_grade_entry.model().item(3).setEnabled(True)
+            resit_grade_entry.model().item(4).setEnabled(True)
         elif original_grade_entry.currentIndex() == 3:  # M
-            standard_resit_checkbox.setEnabled(True)
-            resit_grade_entry.model().item(2).setEnabled(True)
+            resit_grade_entry.setEnabled(True)
+            resit_grade_entry.setCurrentIndex(0)
             resit_grade_entry.model().item(3).setEnabled(True)
+            resit_grade_entry.model().item(4).setEnabled(True)
         elif original_grade_entry.currentIndex() == 4:  # E
-            standard_resit_checkbox.setChecked(False)
-            standard_resit_checkbox.setEnabled(False)
             resit_grade_entry.setEnabled(False)
             resit_grade_entry.setCurrentIndex(0)
 
-    def add_standard(entered_std_num, entered_original_grade, standard_resit, entered_resit_grade):
+    def add_standard(entered_std_num, entered_original_grade, entered_resit_grade):
         entered_original_grade = HR_to_short[entered_original_grade]
-        if standard_resit == "TRUE":
-            entered_resit_grade = HR_to_short[entered_resit_grade]
-        else:
-            entered_resit_grade = "NORESIT"
+        entered_resit_grade = HR_to_short[entered_resit_grade]
 
         # If isn't added, add, else error
         entered_standards = [std[0] for std in std_list]
         if get_std_info(entered_std_num):
             if entered_std_num not in entered_standards:
                 std_credits = get_std_info(entered_std_num)[5]
-                std_list.append([entered_std_num, entered_original_grade, standard_resit, entered_resit_grade, std_credits])
+                std_list.append([entered_std_num, entered_original_grade, entered_resit_grade, std_credits])
             else:
                 error_box("Error: Standard already entered!")
         else:
             error_box("Standard does not exist or is not Registered/Current!")
-        
+
         commit_stds_to_file()
 
     # Create system application window
@@ -292,7 +280,7 @@ def window():
     std_num_entry_box = QLineEdit()
     std_num_entry_box.setPlaceholderText("Enter standard number (e.g 91004)")
     std_num_entry_box.setFont(arial18)
-    add_std_layout.addWidget(std_num_entry_box, 0, 0)
+    add_std_layout.addWidget(std_num_entry_box, 0, 0, 1, 2)
     std_num_entry_box.textChanged.connect(update_preview)
 
     # Original grade combo box
@@ -306,25 +294,18 @@ def window():
     add_std_layout.addWidget(original_grade_entry, 0, 1)
     original_grade_entry.currentIndexChanged.connect(og_grade_changed)
 
-    # Resit checkbox
-    standard_resit_checkbox = QCheckBox()
-    standard_resit_checkbox.setText("Resit")
-    standard_resit_checkbox.setFont(arial18)
-    standard_resit_checkbox.setEnabled(False)
-    add_std_layout.addWidget(standard_resit_checkbox, 1, 0)
-
     # Resit grade combo box
     resit_grade_entry = QComboBox()
     resit_grade_entry.setEnabled(False)
+    resit_grade_entry.addItem("None")
     resit_grade_entry.addItem("Not Achieved")
     resit_grade_entry.addItem("Achieved")
     resit_grade_entry.addItem("Merit")
     resit_grade_entry.addItem("Excellence")
     resit_grade_entry.setFont(arial18)
     add_std_layout.addWidget(resit_grade_entry, 1, 1)
-    resit_grade_entry.model().item(2).setEnabled(False)
     resit_grade_entry.model().item(3).setEnabled(False)
-    standard_resit_checkbox.clicked.connect(resit_grade_entry.setEnabled)
+    resit_grade_entry.model().item(4).setEnabled(False)
 
     # Line break
     lbreak1 = QFrame()
@@ -352,9 +333,8 @@ def window():
 
     # When the add standard button is clicked, activate function to append to student_standards.txt
     add_std_button.clicked.connect(lambda: add_standard(std_num_entry_box.text().strip("AUS"),
-                                                original_grade_entry.currentText(),
-                                                str(standard_resit_checkbox.isChecked()).upper(),
-                                                resit_grade_entry.currentText()))
+                                                        original_grade_entry.currentText(),
+                                                        resit_grade_entry.currentText()))
 
     # Level label
     level_label = QLabel("Level:")
@@ -451,8 +431,8 @@ def window():
 
     # Table with current standards
     current_standards_table = QTableWidget()
-    current_standards_table.setColumnCount(7)
-    current_standards_table.setHorizontalHeaderLabels(["Standard number", "Standard name", "Grade", "Resit", "Resit grade", "Credits", "Remove"])
+    current_standards_table.setColumnCount(6)
+    current_standards_table.setHorizontalHeaderLabels(["Standard number", "Standard name", "Grade", "Resit grade", "Credits", "Remove"])
     current_standards_table.setWordWrap(True)
     current_standards_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
     current_standards_table.horizontalHeader().setStyleSheet("::section{background-color: lightgray;}")
