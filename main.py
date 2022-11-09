@@ -7,7 +7,7 @@ from PyQt5.QtChart import *
 import PyQt5.QtWidgets
 
 credits_required_by_level = {1: 80, 2: 60, 3: 60}
-entered_standards = []  # Saves std_num of saved standards
+std_list = []
 account = {
     'level': 1,
     'a_credits': 0,
@@ -15,7 +15,7 @@ account = {
     'e_credits': 0
 }
 
-grade_pairs = {
+HR_to_short = {
     'FUTURE': 'FUTURE',
     'Not Achieved': 'NA',
     'Achieved': 'A',
@@ -23,7 +23,7 @@ grade_pairs = {
     'Excellence': 'E'
 }
 
-grade_pairs_2 = {
+short_to_HR = {
     'FUTURE': 'FUTURE',
     'NA': 'Not Achieved',
     'A': 'Achieved',
@@ -91,9 +91,20 @@ def window():
                         account[key] += int(standard.split(",")[4])
     
     def update_standard(entered_std_num, entered_original_grade, standard_resit, entered_resit_grade):
-        remove_standard()
-        add_standard(entered_std_num, entered_original_grade, standard_resit, entered_resit_grade)
-        populate_view_standards_table()
+        entered_original_grade = HR_to_short[entered_original_grade]  # Convert human-readable to shorthand for data structure
+        
+        for i, std in enumerate(std_list):
+            if std[0] == entered_std_num:
+                std_list[i][1] = entered_original_grade
+        
+        commit_stds_to_file()
+        
+        
+        
+        # print(entered_original_grade)
+        # remove_standard(entered_std_num)
+        # add_standard(entered_std_num, entered_original_grade, standard_resit, entered_resit_grade)
+        # populate_view_standards_table()
         
     def populate_view_standards_table():
         current_standards_table.clearContents()
@@ -113,8 +124,8 @@ def window():
                 original_grade.addItem("Achieved")
                 original_grade.addItem("Merit")
                 original_grade.addItem("Excellence")
-                original_grade.setCurrentText(grade_pairs_2[standard[1]])
-                original_grade.currentIndexChanged.connect(lambda: update_standard(standard[0], original_grade.currentText(), standard[2], standard[3]))
+                original_grade.setCurrentText(short_to_HR[standard[1]])
+                original_grade.currentIndexChanged.connect(lambda: update_standard(current_standards_table.item(current_standards_table.currentRow(), 0).text(), current_standards_table.cellWidget(current_standards_table.currentRow(), 2).currentText(), standard[2], standard[3]))
                 resit = QComboBox()
                 resit.addItem("TRUE")
                 resit.addItem("FALSE")
@@ -134,7 +145,7 @@ def window():
                 standard_name.setFlags(standard_name.flags() & ~Qt.ItemIsEditable)
 
                 remove_standard_button = QPushButton("X")
-                remove_standard_button.clicked.connect(remove_standard)
+                remove_standard_button.clicked.connect(lambda: remove_standard(current_standards_table.item(current_standards_table.currentRow(), 0).text()))
 
                 current_standards_table.setItem(row, 0, standard_number)
                 current_standards_table.setItem(row, 1, standard_name)
@@ -147,21 +158,19 @@ def window():
                 current_standards_table.verticalHeader().hide()
                 row += 1
 
+    def commit_stds_to_file():
+        with open("student_standards.txt", 'w') as f:
+            for standard in std_list:
+                standard = ",".join(standard) + "\n"
+                f.write(standard)
+    
     def remove_standard(std_num):
-        #std_num = current_standards_table.item(current_standards_table.currentRow(), 0).text()
-        current_standards_table.removeRow(current_standards_table.find)
-
-        with open("student_standards.txt", "r") as f:
-            temp_line_storage = f.readlines()
-        with open("student_standards.txt", "w") as f:
-            for line in temp_line_storage:
-                if std_num not in line:
-                    f.write(line)
-            try:
-                entered_standards.remove(std_num)
-            except ValueError:
-                print("You are not enrolled in this standard!")
-                return False
+        for i,std in enumerate(std_list):
+            if std[0] == std_num:
+                current_standards_table.removeRow(i)
+                del std_list[i]
+        
+        commit_stds_to_file()
 
     def update_preview():
         preview = get_std_info(std_num_entry_box.text().strip(" AUS"))
@@ -215,24 +224,24 @@ def window():
             resit_grade_entry.setCurrentIndex(0)
 
     def add_standard(entered_std_num, entered_original_grade, standard_resit, entered_resit_grade):
-        entered_original_grade = grade_pairs[entered_original_grade]
+        entered_original_grade = HR_to_short[entered_original_grade]
         if standard_resit == "TRUE":
-            entered_resit_grade = grade_pairs[entered_resit_grade]
+            entered_resit_grade = HR_to_short[entered_resit_grade]
         else:
             entered_resit_grade = "NORESIT"
 
-        # If standard exists
+        # If isn't added, add, else error
+        entered_standards = [std[0] for std in std_list]
         if get_std_info(entered_std_num):
             if entered_std_num not in entered_standards:
-                entered_standards.append(entered_std_num)
-                standard_credits = get_std_info(entered_std_num)[5]
-                student_standards = open("student_standards.txt", "a")
-                student_standards.write(','.join([entered_std_num,  entered_original_grade, standard_resit, entered_resit_grade, standard_credits]) + "\n")
-                student_standards.close()
+                std_credits = get_std_info(entered_std_num)[5]
+                std_list.append([entered_std_num, entered_original_grade, standard_resit, entered_resit_grade, std_credits])
             else:
-                error_box("Error: Standard already entered")
+                error_box("Error: Standard already entered!")
         else:
-            error_box("Error: Standard does not exist or is not registered!")
+            error_box("Standard does not exist or is not Registered/Current!")
+        
+        commit_stds_to_file()
 
     # Create system application window
     app = QApplication(sys.argv)
@@ -456,8 +465,8 @@ def window():
 
 
 if __name__ == '__main__':
-    # Load currently enrolled standards from file
     with open("student_standards.txt", 'r') as f:
         for standard in f:
-            entered_standards.append(standard.split(',')[0])
+            standard = standard.strip('\n').split(",")
+            std_list.append(standard)
     window()
