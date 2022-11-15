@@ -15,6 +15,7 @@
 # (New Zealand Certificate of Educational Achievement).
 
 
+import os
 import sys
 import csv
 from PyQt5.QtCore import *
@@ -488,6 +489,18 @@ def window():
 
 
 if __name__ == '__main__':
+    # FAILSAFE for student standards file
+    if os.path.exists("./student_standards.txt"):
+        pass
+    else:
+        open("student_standards.txt", 'x')
+
+    # FAILSAFE for standard master list
+    if os.path.exists("./master-list.csv") and os.path.getsize("master-list.csv") != 0:
+        pass
+    else:
+        sys.exit()
+
     with open("student_standards.txt", 'r') as f:
         for i, line in enumerate(f):
             if i == 0:
@@ -497,6 +510,3 @@ if __name__ == '__main__':
                 standard = line.strip("\n").split(",")
                 std_list.append(standard)
     window()
-
-# End
-# -----------------------------------------------------------------------
